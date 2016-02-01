@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"archive/zip"
@@ -8,42 +8,29 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-
-	"github.com/abnerpc/duckdoc/common"
 )
 
-var config *common.Configuration
+var Config *Configuration
 
-func main() {
-
+func init() {
 	// load config
 	var err error
-	config, err = common.LoadConfiguration()
+	Config, err = LoadConfiguration()
 	if err != nil {
 		fmt.Println("Error loading the configuration file")
 		return
 	}
+}
+
+func main() {
 
 	upload := http.HandlerFunc(uploadHandler)
 
-	http.Handle("/upload", middlewareProtect(upload))
+	http.Handle("/upload", SecureMiddleware(upload))
 	fs := http.FileServer(http.Dir("docs"))
 	http.Handle("/", fs)
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8888", nil)
-}
-
-func middlewareProtect(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = "breakpoint"
-		key := r.Header.Get("Authorization")
-		if _, ok := config.AdminKeys[key]; !ok {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("User not authorized"))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {

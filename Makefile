@@ -1,17 +1,20 @@
 
-SERVER_NAME=duckserver
-DEBUG_SERVER_NAME=duckserver_debug
-SERVER_DIR=server
+APP_NAME=ds-server
+DEBUG_APP_NAME=ds-server-debug
 
-clean-server:
-	@rm -f $(SERVER_DIR)/$(SERVER_NAME)*
+.PHONY: clean
+clean:
+	@rm -f $(APP_NAME)
 
-build-server: clean-server
-	@go build ./$(SERVER_DIR) -o $(SERVER_NAME)
+.PHONY: build
+build: clean
+	@go build -o $(APP_NAME)
 
-run-server: build-server
-	@./$(SERVER_DIR)/$(SERVER_NAME)
+.PHONY: run
+run: build
+	@./$(SERVER_DIR)/$(APP_NAME)
 
-debug-server: clean-server
-	@godebug build ./$(SERVER_DIR) -o $(DEBUG_SERVER_NAME)
-	@./$(DEBUG_SERVER_NAME)
+.PHONY: debug
+debug: clean
+	@godebug build -o $(DEBUG_APP_NAME)
+	@./$(DEBUG_APP_NAME)

@@ -23,5 +23,5 @@ _testmain.go
 *.test
 *.prof
 
-duckserver*
+ds-server*
 conf.json
