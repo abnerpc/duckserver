@@ -10,13 +10,9 @@ import (
 	"path/filepath"
 )
 
-var Config *Configuration
-
 func init() {
 	// load config
-	var err error
-	Config, err = LoadConfiguration()
-	if err != nil {
+	if err := LoadConfiguration(); err != nil {
 		fmt.Println("Error loading the configuration file")
 		return
 	}
@@ -24,11 +20,13 @@ func init() {
 
 func main() {
 
-	upload := http.HandlerFunc(uploadHandler)
+	BuildAPIHandlers()
 
-	http.Handle("/upload", SecureMiddleware(upload))
-	fs := http.FileServer(http.Dir("docs"))
-	http.Handle("/", fs)
+	upload := http.HandlerFunc(uploadHandler)
+	docs := http.FileServer(http.Dir("docs"))
+
+	http.Handle("/upload", UserSecureMiddleware(upload))
+	http.Handle("/", UserSecureMiddleware(docs))
 	fmt.Println("Listening...")
 	http.ListenAndServe(":8888", nil)
 }
