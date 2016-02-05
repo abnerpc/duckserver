@@ -2,10 +2,20 @@ package main
 
 import "net/http"
 
-func SecureMiddleware(allowedKeys map[string]string, next http.Handler) http.Handler {
+func SecureMiddleware(next http.Handler, userTypes ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := r.Header.Get("Authorization")
-		if _, ok := allowedKeys[key]; !ok {
+		userType, ok := Config.AccessKeys[key]
+		if ok {
+			ok = false
+			for _, ut := range userTypes {
+				if userType == ut {
+					ok = true
+					break
+				}
+			}
+		}
+		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("User not authorized"))
 			return
@@ -15,19 +25,9 @@ func SecureMiddleware(allowedKeys map[string]string, next http.Handler) http.Han
 }
 
 func AdminSecureMiddleware(next http.Handler) http.Handler {
-	return SecureMiddleware(Config.AdminKeys, next)
+	return SecureMiddleware(next, Admin)
 }
 
 func UserSecureMiddleware(next http.Handler) http.Handler {
-	if Config.UserKeys == nil {
-		return AdminSecureMiddleware(next)
-	}
-	keys := make(map[string]string)
-	for k, v := range Config.AdminKeys {
-		keys[k] = v
-	}
-	for k, v := range Config.UserKeys {
-		keys[k] = v
-	}
-	return SecureMiddleware(keys, next)
+	return SecureMiddleware(next, Admin, User)
 }

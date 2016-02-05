@@ -12,54 +12,56 @@ func setAPIRoute(route string) string {
 
 func BuildAPIHandlers() {
 
-	changePassword := http.HandlerFunc(changePasswordHandler)
-	addUser := http.HandlerFunc(addUserHandler)
-	removeUser := http.HandlerFunc(removeUserHandler)
+	changeAccessKey := http.HandlerFunc(changeAccessKeyHandler)
+	addAccessKey := http.HandlerFunc(addAccessKeyHandler)
+	deleteAccessKey := http.HandlerFunc(deleteAccessKeyHandler)
 
-	http.Handle(setAPIRoute("change_password"), AdminSecureMiddleware(changePassword))
-	http.Handle(setAPIRoute("add_user"), AdminSecureMiddleware(addUser))
-	http.Handle(setAPIRoute("remove_user"), AdminSecureMiddleware(removeUser))
+	http.Handle(setAPIRoute("change_key"), AdminSecureMiddleware(changeAccessKey))
+	http.Handle(setAPIRoute("add_key"), AdminSecureMiddleware(addAccessKey))
+	http.Handle(setAPIRoute("delete_key"), AdminSecureMiddleware(deleteAccessKey))
 
 }
 
-type UserPayload struct {
-	User     string `json:"user"`
-	Password string `json:"password"`
-}
+func changeAccessKeyHandler(w http.ResponseWriter, r *http.Request) {
 
-type ManipulateUser func(string, string) (string, bool)
+	var keys struct {
+		OldKey string `json:"old_key"`
+		NewKey string `json:"new_key"`
+	}
 
-func isUserValid(p *UserPayload) bool {
-	return p.User != "" && p.Password != ""
-}
-
-func parsePayload(w http.ResponseWriter, r *http.Request) (*UserPayload, bool) {
-	var p UserPayload
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&p)
-	if err != nil || !isUserValid(&p) {
+	err := decoder.Decode(&keys)
+	if err != nil || keys.OldKey == "" || keys.NewKey == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
-		return nil, false
+		return
 	}
-	return &p, true
-}
-
-func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
-	manipulateUserHandler(Config.ChangeUserPassword, w, r)
-}
-
-func addUserHandler(w http.ResponseWriter, r *http.Request) {
-	manipulateUserHandler(Config.AddUser, w, r)
-}
-
-func manipulateUserHandler(f ManipulateUser, w http.ResponseWriter, r *http.Request) {
-	payload, ok := parsePayload(w, r)
+	msg, ok := Config.ChangeAccessKey(keys.OldKey, keys.NewKey)
 	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, msg)
+		return
+	}
+	fmt.Fprintln(w, msg)
+
+}
+
+func addAccessKeyHandler(w http.ResponseWriter, r *http.Request) {
+
+	var access struct {
+		Key      string `json:"access_key"`
+		UserType string `json:"user_type"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&access)
+	if err != nil || access.Key == "" || access.UserType == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
-	msg, ok := f(payload.User, payload.Password)
+	msg, ok := Config.AddAccessKey(access.Key, access.UserType)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
@@ -68,4 +70,25 @@ func manipulateUserHandler(f ManipulateUser, w http.ResponseWriter, r *http.Requ
 	fmt.Fprintln(w, msg)
 }
 
-func removeUserHandler(w http.ResponseWriter, r *http.Request) {}
+func deleteAccessKeyHandler(w http.ResponseWriter, r *http.Request) {
+
+	var access struct {
+		Key string `json:"access_key"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&access)
+	if err != nil || access.Key == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
+		return
+	}
+
+	msg, ok := Config.DeleteAccessKey(access.Key)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, msg)
+		return
+	}
+	fmt.Fprintln(w, msg)
+}

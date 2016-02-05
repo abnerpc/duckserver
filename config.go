@@ -8,9 +8,12 @@ import (
 
 const configFilePath string = "./conf.json"
 
+const initialKey string = "123"
+const Admin string = "admin"
+const User string = "user"
+
 type Configuration struct {
-	AdminKeys map[string]string
-	UserKeys  map[string]string
+	AccessKeys map[string]string
 }
 
 var Config *Configuration
@@ -20,8 +23,8 @@ var Config *Configuration
 func LoadDefaultConfig(saveToFile bool) error {
 
 	Config = &Configuration{}
-	Config.AdminKeys = map[string]string{"123": "admin"}
-	Config.UserKeys = make(map[string]string)
+	Config.AccessKeys = make(map[string]string)
+	Config.AccessKeys[initialKey] = Admin
 
 	if saveToFile {
 		return WriteConfiguration()
@@ -52,19 +55,14 @@ func WriteConfiguration() error {
 	return err
 }
 
-func (c *Configuration) ChangeUserPassword(user string, password string) (string, bool) {
-	currentPassword := ""
-	for k, v := range c.UserKeys {
-		if v == user {
-			currentPassword = k
-			break
-		}
+func (c *Configuration) ChangeAccessKey(oldKey, newKey string) (string, bool) {
+
+	userType, exists := c.AccessKeys[oldKey]
+	if !exists {
+		return "Access Key not found", false
 	}
-	if currentPassword == "" {
-		return "User not found", false
-	}
-	delete(c.UserKeys, currentPassword)
-	c.UserKeys[password] = user
+	delete(c.AccessKeys, oldKey)
+	c.AccessKeys[newKey] = userType
 	err := WriteConfiguration()
 	if err != nil {
 		return "Problem to save configuration", false
@@ -72,12 +70,29 @@ func (c *Configuration) ChangeUserPassword(user string, password string) (string
 	return "Success", true
 }
 
-func (c *Configuration) AddUser(user string, password string) (string, bool) {
-	_, exists := c.UserKeys[password]
-	if exists {
-		return "Password in use", false
+func (c *Configuration) AddAccessKey(key, userType string) (string, bool) {
+	if userType != Admin && userType != User {
+		return "Invalid user type", false
 	}
-	c.UserKeys[password] = user
+	_, exists := c.AccessKeys[key]
+	if exists {
+		return "Access Key in use", false
+	}
+	c.AccessKeys[key] = userType
+	err := WriteConfiguration()
+	if err != nil {
+		return "Problem to save configuration", false
+	}
+	return "Success", true
+}
+
+func (c *Configuration) DeleteAccessKey(key string) (string, bool) {
+
+	_, exists := c.AccessKeys[key]
+	if !exists {
+		return "Access Key not found", false
+	}
+	delete(c.AccessKeys, key)
 	err := WriteConfiguration()
 	if err != nil {
 		return "Problem to save configuration", false
