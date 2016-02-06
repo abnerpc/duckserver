@@ -12,10 +12,12 @@ func setAPIRoute(route string) string {
 
 func BuildAPIHandlers() {
 
+	listAccessKeys := http.HandlerFunc(listAccessKeysHandler)
 	changeAccessKey := http.HandlerFunc(changeAccessKeyHandler)
 	addAccessKey := http.HandlerFunc(addAccessKeyHandler)
 	deleteAccessKey := http.HandlerFunc(deleteAccessKeyHandler)
 
+	http.Handle(setAPIRoute("list_keys"), AdminSecureMiddleware(listAccessKeys))
 	http.Handle(setAPIRoute("change_key"), AdminSecureMiddleware(changeAccessKey))
 	http.Handle(setAPIRoute("add_key"), AdminSecureMiddleware(addAccessKey))
 	http.Handle(setAPIRoute("delete_key"), AdminSecureMiddleware(deleteAccessKey))
@@ -91,4 +93,20 @@ func deleteAccessKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintln(w, msg)
+}
+
+func listAccessKeysHandler(w http.ResponseWriter, r *http.Request) {
+	keys, err := Config.ListAccessKeys()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err)
+		return
+	}
+	result, err := json.Marshal(keys)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprintln(w, string(result))
 }

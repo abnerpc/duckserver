@@ -99,3 +99,7 @@ func (c *Configuration) DeleteAccessKey(key string) (string, bool) {
 	}
 	return "Success", true
 }
+
+func (c *Configuration) ListAccessKeys() (map[string]string, error) {
+	return c.AccessKeys, nil
+}
