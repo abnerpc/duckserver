@@ -24,4 +24,4 @@ _testmain.go
 *.prof
 
 ds-server*
-conf.json
+access.json

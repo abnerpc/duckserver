@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 func init() {
 	// load config
 	if err := LoadConfiguration(); err != nil {
-		fmt.Println("Error loading the configuration file")
+		log.Fatal("Error loading the configuration file")
 		return
 	}
 }
@@ -23,12 +24,12 @@ func main() {
 	BuildAPIHandlers()
 
 	upload := http.HandlerFunc(uploadHandler)
-	docs := http.FileServer(http.Dir("docs"))
+	static := http.FileServer(http.Dir("static"))
 
 	http.Handle("/upload", UserSecureMiddleware(upload))
-	http.Handle("/", UserSecureMiddleware(docs))
-	fmt.Println("Listening...")
-	http.ListenAndServe(":8888", nil)
+	http.Handle("/", UserSecureMiddleware(static))
+	log.Println("Listening on port 8888")
+	log.Fatal(http.ListenAndServe(":8888", nil))
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
