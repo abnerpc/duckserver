@@ -10,8 +10,8 @@ func setAPIRoute(route string) string {
 	return fmt.Sprintf("/api/%s/", route)
 }
 
-// BuildAPIHandlers set up the api handlers
-func BuildAPIHandlers() {
+// SetupAPIHandlers set up the api handlers
+func SetupAPIHandlers() {
 
 	changePassword := http.HandlerFunc(changePasswordKeyHandler)
 	addUser := http.HandlerFunc(addUserHandler)
