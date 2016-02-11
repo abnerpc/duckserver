@@ -38,7 +38,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = extract(out.Name(), "docs")
+	err = extract(out.Name(), "static")
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
@@ -46,7 +46,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	os.Remove(out.Name())
 
-	fmt.Fprintln(w, "Docs uploaded!")
+	fmt.Fprintln(w, "Files uploaded!")
 }
 
 func extract(archive, target string) error {
