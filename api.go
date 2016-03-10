@@ -26,18 +26,18 @@ func SetupAPIHandlers() {
 func changePasswordKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var user struct {
-		AccessKey   string `json:"access_key"`
+		UserName    string `json:"username"`
 		NewPassword string `json:"new_password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
-	if err != nil || user.AccessKey == "" || user.NewPassword == "" {
+	if err != nil || user.UserName == "" || user.NewPassword == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
-	msg, ok := Config.changePassword(user.AccessKey, user.NewPassword)
+	msg, ok := Config.changePassword(user.UserName, user.NewPassword)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
@@ -49,19 +49,20 @@ func changePasswordKeyHandler(w http.ResponseWriter, r *http.Request) {
 func addUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var user struct {
-		AccessKey string `json:"access_key"`
-		UserType  byte   `json:"user_type"`
+		UserName string `json:"username"`
+		Password string `json:"password"`
+		UserType byte   `json:"user_type"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
-	if err != nil || user.AccessKey == "" || (user.UserType != Admin && user.UserType != User) {
+	if err != nil || user.UserName == "" || user.Password == "" || (user.UserType != Admin && user.UserType != User) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
-	msg, ok := Config.addUser(user.AccessKey, user.UserType)
+	msg, ok := Config.addUser(user.UserName, user.Password, user.UserType)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
@@ -73,18 +74,18 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var user struct {
-		AccessKey string `json:"access_key"`
+		UserName string `json:"username"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
-	if err != nil || user.AccessKey == "" {
+	if err != nil || user.UserName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
-	msg, ok := Config.deleteUser(user.AccessKey)
+	msg, ok := Config.deleteUser(user.UserName)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
