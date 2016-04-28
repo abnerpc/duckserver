@@ -8,46 +8,43 @@ import (
 	"strings"
 )
 
-const configFilePath string = "./access.json"
+const (
+	configFilePath string = "./access.json"
 
-// Admin is the value for identify admin users
-const Admin byte = 0
+	// Admin is the value for identify admin users
+	Admin byte = 0
 
-// User is the value for identify common (non admin) users
-const User byte = 1
+	// User is the value for identify non admin users
+	User byte = 1
+)
 
-// Configuration is loaded from the configFilePath and has the current
-// users configuration
+// Configuration is loaded from the configFilePath file and hold the
+// current users authorized
 type Configuration struct {
 	Users      map[string]string
 	AccessKeys map[string]byte
 }
 
-// Config is the global current configuration
-var Config *Configuration
+// CurrentConfig is the global current configuration
+var CurrentConfig *Configuration
 
 // WriteConfiguration saves the current Configuration state to configFilePath
 func WriteConfiguration() error {
-	configJSON, err := json.Marshal(Config)
+	configJSON, err := json.Marshal(CurrentConfig)
 	if err == nil {
 		err = ioutil.WriteFile(configFilePath, configJSON, 0644)
 	}
 	return err
 }
 
-// LoadDefaultConfig returns the default configuration. If the saveToFile parameter
-// is true, than the configuration is saved to configFilePath file.
-func LoadDefaultConfig(saveToFile bool) error {
-
-	Config = &Configuration{make(map[string]string), make(map[string]byte)}
+// LoadFirstConfig creates the first default configuration and save it to the
+// configFilePath
+func LoadFirstConfig() error {
+	CurrentConfig = &Configuration{make(map[string]string), make(map[string]byte)}
 	accessKey := basicAuth("admin", "123")
-	Config.Users["admin"] = accessKey
-	Config.AccessKeys[accessKey] = Admin
-
-	if saveToFile {
-		return WriteConfiguration()
-	}
-	return nil
+	CurrentConfig.Users["admin"] = accessKey
+	CurrentConfig.AccessKeys[accessKey] = Admin
+	return WriteConfiguration()
 }
 
 // LoadConfiguration loads the configuration from configFilePath and returns a
@@ -56,12 +53,12 @@ func LoadConfiguration() error {
 
 	file, err := os.Open(configFilePath)
 	if err != nil {
-		return LoadDefaultConfig(true)
+		return LoadFirstConfig()
 	}
 
 	decoder := json.NewDecoder(file)
-	Config = &Configuration{}
-	return decoder.Decode(Config)
+	CurrentConfig = &Configuration{}
+	return decoder.Decode(CurrentConfig)
 }
 
 // See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
@@ -93,6 +90,15 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return cs[:s], cs[s+1:], true
 }
 
+func saveCurrentConfig() (string, bool) {
+	err := WriteConfiguration()
+	if err != nil {
+		return "Problem to save configuration.", false
+	}
+
+	return "Success", true
+}
+
 func (c *Configuration) changePassword(userName, newPassword string) (string, bool) {
 
 	keyUserName := ""
@@ -115,12 +121,7 @@ func (c *Configuration) changePassword(userName, newPassword string) (string, bo
 	c.Users[userName] = newAccessKey
 	c.AccessKeys[newAccessKey] = userType
 
-	err := WriteConfiguration()
-	if err != nil {
-		return "Problem to save configuration.", false
-	}
-
-	return "Success", true
+	return saveCurrentConfig()
 }
 
 func (c *Configuration) addUser(userName, password string, userType byte) (string, bool) {
@@ -134,12 +135,7 @@ func (c *Configuration) addUser(userName, password string, userType byte) (strin
 	c.Users[userName] = accessKey
 	c.AccessKeys[accessKey] = userType
 
-	err := WriteConfiguration()
-	if err != nil {
-		return "Problem to save configuration.", false
-	}
-
-	return "Success", true
+	return saveCurrentConfig()
 }
 
 func (c *Configuration) deleteUser(userName string) (string, bool) {
@@ -151,10 +147,5 @@ func (c *Configuration) deleteUser(userName string) (string, bool) {
 	delete(c.Users, userName)
 	delete(c.AccessKeys, accessKey)
 
-	err := WriteConfiguration()
-	if err != nil {
-		return "Problem to save configuration.", false
-	}
-
-	return "Success", true
+	return saveCurrentConfig()
 }

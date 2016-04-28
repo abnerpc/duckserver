@@ -37,7 +37,7 @@ func changePasswordKeyHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
-	msg, ok := Config.changePassword(user.UserName, user.NewPassword)
+	msg, ok := CurrentConfig.changePassword(user.UserName, user.NewPassword)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
@@ -62,7 +62,7 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, ok := Config.addUser(user.UserName, user.Password, user.UserType)
+	msg, ok := CurrentConfig.addUser(user.UserName, user.Password, user.UserType)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)
@@ -85,7 +85,7 @@ func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, ok := Config.deleteUser(user.UserName)
+	msg, ok := CurrentConfig.deleteUser(user.UserName)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, msg)

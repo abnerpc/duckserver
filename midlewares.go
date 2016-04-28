@@ -21,7 +21,7 @@ func SecureMiddleware(next http.Handler, userTypes ...byte) http.Handler {
 		authorized := false
 		key, ok := GetAuthorizarion(r.Header.Get("Authorization"))
 		if ok {
-			userType, ok := Config.AccessKeys[key]
+			userType, ok := CurrentConfig.AccessKeys[key]
 			if ok {
 				for _, ut := range userTypes {
 					if userType == ut {
